@@ -29,9 +29,12 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 <img src="/images/Schematic.JPG" alt="Schematic" width="600" height="450"> 
 
 # Instructions
-1) Add SSID and password to code.  
-2) Set up an account at IFTTT.com.  Add the "Maker" service to your account.  Copy the Maker service API Key, which can be found under the Maker service settings.  It is a long character sequence following at the end of the URL in Settings, i.e., the character sequence appearing at API_KEY in https://maker.ifttt.com/use/API_KEY.
+1. Add SSID and password to the sketch GarageDoorMonitor.ino after "ssid =" and "password =".  
+2. Set up an account at IFTTT.com.  Add the "Maker" service to your account.  Copy the Maker service API Key, which can be found under the Maker service settings.  It is a long character sequence following at the end of the URL in Settings, i.e., the character sequence appearing at API_KEY in https://maker.ifttt.com/use/API_KEY.  Note: once the key is created, do not press the "Edit connection" link, or it will create a new key.
+3. Add the IFTTT API_KEY to the sketch after "apiKey =".
+4. (Optional) If logging is desired, uncomment #define ADAFRUIT_IO and set up and account at adafruit.io.  Add AIO_USERNAME and AIO_KEY to sketch.
+5. The code is set up for Pacific Timezone.  Change as necessary.
+6. Compile sketch using the Arduino IDE, and upload to the NodeMCU.  A number of libraries will also need to get added: NTPClient, ESP8266WiFi, WiFi, Time, Timezone, ArduinoJson, and Adafruit_MQTT.  Most of these libraries are added through the Library Manager (Sketch > Include Library > Manage Libraries).  The only exception is Timezone, which must be manually installed from https://github.com/JChristensen/Timezone.  Also, there are plenty of tutorials on the web on how to set up the Arduino IDE for the NodeMCU board, so those instructions won't be repeated here.
+7. In IFTTT, create a new applet.  Choose "Maker" as the trigger (the "if this"), and call the event "door_open".   Choose Gmail as the action (the "then that").  Place the desired emails on the To line (text messages can also be sent, e.g., as xxxxxxxxxx@txt.att.net), and fill out the Subject and Body as shown below, where "Value1" and "Value2" are added as "Ingredients".
 
-
-
-If logging is desired, uncomment #define ADAFRUIT_IO and set up and account at adafruit.io.  
+![door_open](/images/IFTTT1.JPG)
