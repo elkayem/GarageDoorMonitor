@@ -313,7 +313,7 @@ void readStandbyButton() {
           Serial.println("Standby Mode");
         }
         else {
-          if (digitalRead(DOOR) == OPEN)
+          if (readDoorStatus() == CLOSED)
             status_leds(0, 1, 0, 0); // Door shut, status = Green
           else
             status_leds(1, 0, 1, 0); // Door open, status = Magenta
