@@ -1,5 +1,7 @@
 # GarageDoorMonitor
 
+[![Join the chat at https://gitter.im/GarageDoorMonitor/Lobby](https://badges.gitter.im/GarageDoorMonitor/Lobby.svg)](https://gitter.im/GarageDoorMonitor/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ![Monitor](/images/IMG_1274.JPG)
 
 The Garage Door Monitor continously monitors whether your garage door is closed, and sends out an email or text message if it has been left open for more than 15 minutes.  It uses the popular ESP8266 WiFi module, and relays messages to you via the IFTTT web service. In our household, we have accidentally left the garage door open on multiple occasions, and this device has saved our bacon more than once.  
