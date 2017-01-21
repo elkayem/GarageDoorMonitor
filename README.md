@@ -1,7 +1,5 @@
 # GarageDoorMonitor
 
-[![Join the chat at https://gitter.im/GarageDoorMonitor/Lobby](https://badges.gitter.im/GarageDoorMonitor/Lobby.svg)](https://gitter.im/GarageDoorMonitor/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 ![Monitor](/images/IMG_1274.JPG)
 
 The Garage Door Monitor continously monitors whether your garage door is closed, and sends out an email or text message if it has been left open for more than 15 minutes.  It uses the popular ESP8266 WiFi module, and relays messages to you via the IFTTT web service. In our household, we have accidentally left the garage door open on multiple occasions, and this device has saved our bacon more than once.  
@@ -62,3 +60,8 @@ I have left an I2C connector on the PCB for possible future upgrades.  Some sugg
 * Add an I2C OLED display to show current status, time, etc. 
 * Add other I2C sensors, such as temperature.  Multiple I2C devices can be added in parallel.
 * Design a 3D printed case
+
+# Door Monitor Discussion
+This project was designed for the LM SSC Innovation Garage.  If you are in the process of building one and have some improvements/ideas to share, or a little troubleshooting help, please join the discussion at Gitter:
+[![Join the chat at https://gitter.im/GarageDoorMonitor/Lobby](https://badges.gitter.im/GarageDoorMonitor/Lobby.svg)](https://gitter.im/GarageDoorMonitor/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
