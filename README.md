@@ -30,9 +30,9 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 
 # Instructions
 1. Configure Arduino IDE
-..1. Install Arduino IDE 1.8.1 (or later) from arduino.cc
-..2. Open File>Preferences, and enter the following URL into "Additional Board Manager URLs": http://arduino.esp8266.com/stable/package_esp8266com_index.json
-..3. In the Tools menu, configure Board: NodeMCU 1.0 (ESP-12E Module), CPU Frequency: 80 MHz, Upload Speed: 115200.
+  1. Install Arduino IDE 1.8.1 (or later) from arduino.cc
+  2. Open File>Preferences, and enter the following URL into "Additional Board Manager URLs": http://arduino.esp8266.com/stable/package_esp8266com_index.json
+  3. In the Tools menu, configure Board: NodeMCU 1.0 (ESP-12E Module), CPU Frequency: 80 MHz, Upload Speed: 115200.
 2. Add SSID and password to the sketch GarageDoorMonitor.ino after "ssid =" and "password =".  
 3. Set up an account at IFTTT.com.  Add the "Maker" service to your account.  Copy the Maker service API Key, which can be found under the Maker service settings.  It is a long character sequence following at the end of the URL in Settings, i.e., the character sequence appearing at API_KEY in https://maker.ifttt.com/use/API_KEY.  Note: once the key is created, do not press the "Edit connection" link, or it will create a new key and remove the old one.
 4. Add the IFTTT API_KEY to the sketch after "apiKey =".
@@ -51,7 +51,7 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 
   ![door_monitor_active](/images/IFTTT3.JPG)
 13. Solder together your garage door monitor, install it in your garage, and plug it in.  You should be good to go!  
-..* **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
+  * **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
 
 The LED will be red at turn-on, and will change to green once it has connected to WiFi and synced with NIST time.  When the garage door is shut, the light will remain green.  If open, it will change to magenta for 15 minutes, and will then change to red after it has sent out its first email.  Pressing the tactile button will cause the light to blink blue, and the monitor will not send any emails for 2 hours, or whenever the button is pushed again, which ever comes first.  Any failure to connect to WiFi will cause the monitor to blink red until it is able to reconnect.
 
