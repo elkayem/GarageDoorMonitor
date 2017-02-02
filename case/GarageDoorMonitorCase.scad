@@ -9,7 +9,53 @@ caseWidth = boardWidth+2*wallThickness-2*gap+.4;
 buttonRad = 5;
 cutWidth = 1;
 
+// The standoffs are sized for tiny screws I pulled out of an old laptop.
+// Printed on a 0.5 mm nozzle, so if using a smaller nozzle may want to
+// shrink the boardScrewDiam a tad.
+
+boardHole1PosX = 14.5;
+boardHole1PosY = 3.5;
+boardHole2PosX = boardLength-5;
+boardHole2PosY = 8.5;
+boardScrewDiam = 2.5;
+standoffHeight = 3;
 slop = 0.4;
+
+caseTop();
+
+translate([0,50,0])
+caseBottom();
+
+module caseBottom() 
+{
+    cube([boardLength,boardWidth,boardThickness]);
+    translate([boardHole1PosX,boardHole1PosY,boardThickness])
+    difference()
+    {
+        cylinder(d=boardScrewDiam+2,h=standoffHeight,$fn=20);
+        cylinder(d=boardScrewDiam,h=standoffHeight,$fn=20);
+    }
+    translate([boardHole1PosX,boardWidth-boardHole1PosY,boardThickness])
+    difference()
+    {
+        cylinder(d=boardScrewDiam+2,h=standoffHeight,$fn=20);
+        cylinder(d=boardScrewDiam,h=standoffHeight,$fn=20);
+    }    translate([boardHole2PosX,boardHole2PosY,boardThickness])
+    difference()
+    {
+        cylinder(d=boardScrewDiam+2,h=standoffHeight,$fn=20);
+        cylinder(d=boardScrewDiam,h=standoffHeight,$fn=20);
+    }
+    translate([boardHole2PosX,boardWidth-boardHole2PosY,boardThickness])
+    difference()
+    {
+        cylinder(d=boardScrewDiam+2,h=standoffHeight,$fn=20);
+        cylinder(d=boardScrewDiam,h=standoffHeight,$fn=20);
+    }
+
+}
+module caseTop()
+{
 difference()
 {
     cube([caseLength,caseWidth,caseHeight]);
@@ -47,5 +93,7 @@ difference()
 
 translate([wallThickness+22,caseWidth-21,boardThickness])
 cylinder(d1=5,d2=3,h=caseHeight-12,$fn=20);
+}
+
 
 
