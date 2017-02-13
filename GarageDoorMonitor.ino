@@ -1,6 +1,6 @@
 /*    
  *    GarageDoorMonitor
- *	  Copyright (C) 2016  Larry McGovern
+ *	  Copyright (C) 2017  Larry McGovern
  *	
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -12,7 +12,10 @@
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License <http://www.gnu.org/licenses/> for more details.
  */
- 
+
+//#define ADAFRUIT_IO  // Uncomment if using Adafruit IO account
+//#define OLED_DISPLAY // Uncomment if using an OLED Display
+
 #include <NTPClient.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -20,7 +23,12 @@
 #include <Timezone.h>
 #include <ArduinoJson.h>
 
-//#define ADAFRUIT_IO  // Uncomment if using Adafruit IO account
+#ifdef OLED_DISPLAY
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Fonts/FreeMonoBold12pt7b.h>
+#endif
+
 #ifdef ADAFRUIT_IO
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
@@ -65,7 +73,7 @@ Adafruit_MQTT_Publish garage_door = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/
 // ** Adafruit IO Setup Complete ****//
 #endif
 
-const char* month_names[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+const char* month_names[] = {"Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
 const char* day_names[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 const char* am_pm[] = {"AM", "PM"};
 const char* door_open_closed[] = {"Door closed", "Door open"};
@@ -78,10 +86,11 @@ Timezone myTZ(myDST, mySTD);
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.nist.gov", 0, 7200000); // Update time every two hours
 
-int doorStatus, doorStatusPrev = CLOSED, openMessage = false;
+int wifiStatus, doorStatus, doorStatusPrev = CLOSED, openMessage = false;
 unsigned long int changeTime, changeTimer, lastCheckTime, standbyModeTime;
-char changeTimeStr[50];
+char changeTimeStr[50], closeTimeStr[20];
 int dailyMessageSent;
+int prevSecond;
 
 bool redState, greenState, blueState, blinkState, standbyMode = 0;
 
@@ -96,6 +105,11 @@ bool redState, greenState, blueState, blinkState, standbyMode = 0;
 #define DOOR_CHECK_PERIOD 100   // Check door status every 100 msec
 #define STANDBY_TIMEOUT 7200000  // Automatically go out of standby mode after 2 hours
 
+#ifdef OLED_DISPLAY
+#define OLED_RESET  D8
+Adafruit_SSD1306 display(OLED_RESET);
+#endif
+
 void setup() {
   Serial.begin(115200);
 
@@ -104,7 +118,18 @@ void setup() {
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BLUE_LED, OUTPUT);
-
+  
+#ifdef OLED_DISPLAY
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // OLED I2C Address, may need to change for different device,
+                                              // Check with I2C_Scanner
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Connecting...");
+  display.display();
+#endif
+  
   status_leds(1, 0, 0, 0); // Solid red at turn-on
 
   WiFi.begin(ssid, password);
@@ -112,10 +137,19 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
+  wifiStatus = 1;
   Serial.println(" Connected");
 
-  timeClient.begin();
+#ifdef OLED_DISPLAY  
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.print("Wifi Connected");
+  display.setCursor(0,28);
+  display.println("Updating local time");
+  display.display();
+#endif
 
+  timeClient.begin();
   while (!timeClient.update()) {
     delay(500);
     Serial.print(".");
@@ -126,19 +160,23 @@ void setup() {
   changeTimer = changeTime;
   lastCheckTime = millis() - DOOR_CHECK_PERIOD;
   standbyModeTime = millis();
-  recordTime(changeTimeStr);
+  updateTime(1);
   dailyMessageSent = day();
-
+  
   status_leds(0, 1, 0, 0); // Set-up complete, set to green
 }
 
 void loop()
 {
+  if (second() != prevSecond) {
+    updateTime(0);  // Update time displayed on OLED
+    prevSecond = second();
+  }
   blink_leds();
   readStandbyButton();
   if (standbyMode) {
     if (millis() - standbyModeTime > STANDBY_TIMEOUT)
-      standbyMode = 0;  // Automatically go out of stanby mode after timeout period
+      standbyMode = 0;  // Automatically go out of standby mode after timeout period
     else
       return;
   }
@@ -157,10 +195,11 @@ void loop()
         status_leds(0, 1, 0, 0); // Door shut, status = Green
       else
         status_leds(1, 0, 1, 0); // Door open, status = Magenta
-    }
-    recordTime(changeTimeStr);
+    } 
+
     changeTime = millis();
     changeTimer = changeTime;
+    updateTime(1);
     Serial.println(String(door_open_closed[(int)(doorStatus==OPEN)]) + " at " + changeTimeStr);
     sendAdaIO();
     doorStatusPrev = doorStatus;   
@@ -186,30 +225,70 @@ void loop()
   lastCheckTime = millis();
 }
 
-void recordTime(char *date_time_str) {
-  char tod[10];
+#define colonDigit(digit) digit < 10 ? ":0" : ":"
+
+void updateTime(int updateChangeTime) {  // If updateChangeTime == 1, the global changeTimeString is updated
+  char tod_hm[10],tod_hms[15], date_str[25], Timer[10];
+  int timerMin, timerSec;
   TimeChangeRule *tcr;
 
   timeClient.update();
 
   setTime(myTZ.toLocal(timeClient.getEpochTime(), &tcr));
 
-  formattedTime(tod, hourFormat12(), minute(), second());
+  sprintf(tod_hm, "%d%s%d", hourFormat12(), colonDigit(minute()), minute());  // Hours, minutes
+  sprintf(tod_hms, "%s%s%d", tod_hm, colonDigit(second()), second());  // Hours, minutes, seconds
 
-  sprintf(date_time_str, "%s %s %s on %s, %s %d, %d", tod, am_pm[isPM()],
+  if (updateChangeTime) {  
+    sprintf(changeTimeStr, "%s %s %s on %s, %s %d, %d", tod_hm,  am_pm[isPM()],
           tcr -> abbrev, day_names[weekday() - 1], month_names[month() - 1], day(), year());
+    if (doorStatus == CLOSED) {
+      sprintf(closeTimeStr, "%s %s, %s %d", tod_hm,  am_pm[isPM()], month_names[month() - 1], day());  
+    }
+  }
 
+#ifdef OLED_DISPLAY
+  sprintf(date_str, "%s, %s %d", day_names[weekday() - 1], month_names[month() - 1], day());
+  display.clearDisplay();
+  display.setCursor(0,8);
+  display.setFont(&FreeMonoBold12pt7b);
+  display.println(tod_hms);
+  display.setCursor(0,23);
+  display.setFont(); 
+  display.println(date_str);
+  display.println("");
+  display.println("Door last closed at:"); 
+  display.println(closeTimeStr);
+
+  if (!wifiStatus) {
+    display.println("Error: No Internet");
+  }
+  else if (standbyMode) {
+    timerSec = (STANDBY_TIMEOUT - (millis() - standbyModeTime)) / 1000;
+    timerMin = timerSec / 60;
+    timerSec -= 60*timerMin;    
+    sprintf(Timer,"%d%s%d",timerMin,colonDigit(timerSec),timerSec);
+    display.println("");
+    display.print("Standby Mode: ");
+    display.print(Timer); 
+  }
+  else if (doorStatus == OPEN) {
+    timerSec = (millis() - changeTime) / 1000;
+    timerMin = timerSec / 60;
+    timerSec -= 60*timerMin;
+    sprintf(Timer,"%d%s%d",timerMin,colonDigit(timerSec),timerSec);
+    display.println("");
+    display.print("Door open for: ");
+    display.print(Timer); 
+  }
+  display.display();
+#endif
 }
-#define colonDigit(digit) digit < 10 ? ":0" : ":"
-void formattedTime(char *tod, int hours, int minutes, int seconds)
-{
-  // sprintf(tod, "%d%s%d%s%d", hours, colonDigit(minutes), minutes, colonDigit(seconds), seconds);  // Hours, minutes, seconds
-  sprintf(tod, "%d%s%d", hours, colonDigit(minutes), minutes);  // Only report hours and minutes
-}
+
 
 int sendAdaIO()
 {
-  #ifdef ADAFRUIT_IO
+#ifdef ADAFRUIT_IO
   if (!mqtt.connected()) {  // Reconnect if not connected
      Serial.print("Connecting to MQTT... ");
 
@@ -235,7 +314,7 @@ int sendAdaIO()
   garage_door.publish(doorStatus==OPEN);    // Current door state
 
   Serial.println("Sent");
-  #endif
+#endif
   return(1);
 }
 
@@ -250,8 +329,10 @@ int sendIFTTT(String url)
   if (!client.connect(host, httpPort)) {
     Serial.println("connection failed");
     status_leds(1, 0, 0, 1); // Blink red, unable to connect to IFTTT
+    wifiStatus = 0;
     return (0);
   }
+  wifiStatus = 1;
 
   StaticJsonBuffer<200> jsonBuffer;
 
@@ -328,10 +409,13 @@ void readStandbyButton() {
           Serial.println("Standby Mode");
         }
         else {
-          if (readDoorStatus() == CLOSED)
+          if (readDoorStatus() == CLOSED) {
             status_leds(0, 1, 0, 0); // Door shut, status = Green
-          else
+          }
+          else {
             status_leds(1, 0, 1, 0); // Door open, status = Magenta
+            changeTimer = millis();  // Reset 15 minute timer
+          }
           Serial.println("Ready Mode");
         }
       }
@@ -353,4 +437,6 @@ int readDoorStatus() {
   
   return(digitalRead(DOOR)); 
 }
+
+
 
