@@ -1,6 +1,6 @@
 # GarageDoorMonitor
 
-![Monitor](/images/IMG_1274.JPG)
+![Monitor](/images/IMG_1339.JPG)
 
 The Garage Door Monitor continously monitors whether your garage door is closed, and sends out an email or text message if it has been left open for more than 15 minutes.  It uses the popular ESP8266 WiFi module, and relays messages to you via the IFTTT web service. In our household, we have accidentally left the garage door open on multiple occasions, and this device has saved our bacon more than once.  
 
@@ -25,11 +25,13 @@ The following parts are required, as pictured below:
 * (Optional) Printed Circuit Board (Eagle files included)
 * (Optional) 128x64 I2C OLED Display  (Preferably a two-color display, e.g., yellow/blue)
 
-The PCB is indicated as optional, since the circuit is simple enough to hand solder on a PCB breadboard if desired (schematic shown below).  An OLED display as shown below can enhance the monitor, but is not necessary. 
+The PCB is indicated as optional, since the circuit is simple enough to hand solder on a PCB breadboard if desired (schematic shown below).  An OLED display as shown below can enhance the monitor, but is not necessary. There are also two different variations of 3D printed cases provided, one which is used when there is no OLED display, and the other to be used with an OLED.  The non-OLED case was designed in OpenSCAD, and the OLED case (pictured below) was designed in Sketchup 2017.
 
 <img src="/images/IMG_1271.JPG" alt="Monitor" width="400" height="300"> <img src="/images/IMG_1273.JPG" alt="Monitor" width="400" height="300">
+<img src="/images/IMG_1274.JPG" alt="MonotorAssembled" width="400" height="300">  <img src="/images/IMG_1329.JPG" alt="OLED" width="400" height="300"> 
+<img src="/images/IMG_1336.JPG" alt="OLED_Case" width="400" height="300">  <img src="/images/CaseSketchup.JPG" alt="CaseDesign" width="400"> 
 <img src="/images/Schematic.JPG" alt="Schematic" width="600" height="450"> 
-<img src="/images/IMG_1329.JPG" alt="OLED" width="640" height="480"> 
+
 
 # Instructions
 1. Configure Arduino IDE
@@ -54,15 +56,17 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 13. (Optional) You may optionally create an additional applet which will send out an email at midnight every day giving you confirmation that your door monitor is still working, and the last time the garage door was closed.  (If this feature is not desired, the related part of the sketch can be removed.)  This applet also has "Maker" as the trigger and Gmail as the action. Call the Maker event name "door_monitor_active".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
 
   ![door_monitor_active](/images/IFTTT3.JPG)
-14. Solder together your garage door monitor, install it in your garage, and plug it in.  If using an OLED display, connect display to the I2C headers using 4" female-female jumper wires, taking care to match the 3V3 and GND on the display to the board.  You should be good to go!  
+14. Solder together your garage door monitor, install it in your garage, and plug it in.  If using an OLED display, connect display to the I2C headers using 4" female-female jumper wires, taking care to match the 3V3 and GND on the display to the board.    
   * **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
   
+15. Print out a case, and install in your garage.  Two case designs are provided in the "cases" folder. 
+
 The LED will be red at turn-on, and will change to green once it has connected to WiFi and synced with NIST time.  When the garage door is shut, the light will remain green.  If open, it will change to magenta for 15 minutes, and will then change to red after it has sent out its first email.  Pressing the tactile button will cause the light to blink blue, and the monitor will not send any emails for 2 hours, or whenever the button is pushed again, which ever comes first.  Any failure to connect to WiFi will cause the monitor to blink red until it is able to reconnect.
 
 I have left an I2C connector on the PCB for possible future upgrades.  Some suggested upgrades:
 * Make the SSID, password, and API Key configurable.  This can be done using the WiFiManager library.  When the device is first turned on, it will create a WiFi access point.  The user can then log into the access point and add SSID, password, and API Key.  These items get stored in the device's nonvolatile memory, and will continue to present after power cycling the device.  It may be useful to have a way to reset the configurable data, for example, by pressing the tactile button for 10 seconds.  
 * Add other I2C sensors, such as temperature.  Multiple I2C devices can be added in parallel.
-* Design a 3D printed case
+* Design a new 3D printed case, or improve upon one of the cases provided.
 
 # Door Monitor Discussion
 This project was designed for the LM SSC Innovation Garage.  If you are in the process of building one and have some improvements/ideas to share, or a little troubleshooting help, please join the discussion at Gitter:
