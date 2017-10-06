@@ -1,6 +1,6 @@
 # GarageDoorMonitor
 
-![Monitor](/images/IMG_1339.JPG)
+![Monitor](/images/IMG_1485.JPG)
 
 The Garage Door Monitor continously monitors whether your garage door is closed, and sends out an email or text message if it has been left open for more than 15 minutes.  It uses the popular ESP8266 WiFi module, and relays messages to you via the IFTTT web service. In our household, we have accidentally left the garage door open on multiple occasions, and this device has saved our bacon more than once.  
 
@@ -39,21 +39,22 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
   2. Open File>Preferences, and enter the following URL into "Additional Board Manager URLs": http://arduino.esp8266.com/stable/package_esp8266com_index.json
   3. In the Tools menu, configure Board: NodeMCU 1.0 (ESP-12E Module), CPU Frequency: 80 MHz, Upload Speed: 115200.
 2. Add SSID and password to the sketch GarageDoorMonitor.ino after "ssid =" and "password =".  
-3. Set up an account at IFTTT.com.  Add the "Maker" service to your account.  Copy the Maker service API Key, which can be found under the Maker service settings.  It is a long character sequence following at the end of the URL in Settings, i.e., the character sequence appearing at API_KEY in https://maker.ifttt.com/use/API_KEY.  Note: once the key is created, do not press the "Edit connection" link, or it will create a new key and remove the old one.
+3. Set up an account at IFTTT.com.  Add the "Webhook" service to your account.  Copy the Webhook service API Key, which can be found under the Webhook service settings.  It is a long character sequence following at the end of the URL in Settings, i.e., the character sequence appearing at API_KEY in https://maker.ifttt.com/use/API_KEY.  Note: once the key is created, do not press the "Edit connection" link, or it will create a new key and remove the old one.
 4. Add the IFTTT API_KEY to the sketch after "apiKey =".
 5. (Optional) If logging is desired, uncomment #define ADAFRUIT_IO and set up and account at https://io.adafruit.com/.  Add AIO_USERNAME and AIO_KEY to sketch.  Add a feed called "garage-door" to your Adafruit IO account.
 6. The code is set up for Pacific Timezone.  Change as necessary.
 7. Install the following libraries: NTPClient, ESP8266WiFi, WiFi, Time, Timezone, ArduinoJson, and Adafruit_MQTT.  Most of these libraries are added through the Library Manager (Sketch > Include Library > Manage Libraries).  The only exception is Timezone, which must be manually installed from https://github.com/JChristensen/Timezone.  
-8. (Optional) If using an OLED display, uncomment the line #define OLED_DISPLAY in the sketch.  Install the libraries Adafruit_GFX and Adafruit_SSD1306.  In the file Adafruit_SSD1306.h, uncomment the line #define SSD1306_128_64, and comment out all other displays.
+8. (Optional) If using an OLED display, uncomment the line #define OLED_DISPLAY in the sketch.  Install the libraries Adafruit_GFX and Adafruit_SSD1306.  In the file Adafruit_SSD1306.h (found in the folder Arduino\libraries\Adafruit_SSD1306, where 
+"Arduino" is your top level Arduino directory), uncomment the line #define SSD1306_128_64, and comment out all other displays. **Important Note:** If you don't do the above step, the library will assume you are using a 32-pixel display and the displayed text will not fit on the screen.
 9. Connect the NodeMCU board to your computer using a micro USB cable, and set Tools>Port to the new port that appears.  Your computer should automatically install the driver, but if it does not, you may need to manually download and install the CP2102 driver from http://www.silabs.com/products/mcu/pages/usbtouartbridgevcpdrivers.aspx.  
 10. Press the Upload button to compile the sketch and upload to the NodeMCU.  The most common reason for failing to compile are an selecting the wrong board or not installing all the required libraries.
-11. In IFTTT, create a new applet.  Choose "Maker" as the trigger (the "if this" part), and call the event "door_open".   Choose Gmail as the action (the "then that" part).  Place the desired emails on the To line (text messages can also be sent depending on the provider, e.g., as xxxxxxxxxx@txt.att.net), and fill out the Subject and Body as shown below, where "Value1" and "Value2" are added as "Ingredients".
+11. In IFTTT, create a new applet.  You should see a sentence that says "if +this then that".  Press "+this", and choose the "Webhook" service.  Select the "Receive a web request" trigger.  Call the event "door_open", and create the trigger. Next, press "+that" (from the "if this then that" sentence) and choose the Gmail service.  Select the "Send and email" action.    Choose Gmail as the action (the "then that" part).  Place the desired emails on the To line (text messages can also be sent depending on the provider, e.g., as xxxxxxxxxx@txt.att.net).  Fill out the Subject as: Garage Door Open for  "{{Value1}}" Minutes.  Fill out the body as: The Garage Door was opened at {{Value1}} and has been open for {{Value2}} minutes.  Press the "Create action" buttong.  It should look as shown below:
 
   ![door_open](/images/IFTTT1.JPG)
-12. Create another applet in IFTTT with "Maker" as the trigger and Gmail as the action.  Call the Maker event name "door_closed".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
+12. Create another applet in IFTTT with Webhook as the trigger and Gmail as the action.  Call the Webhook event name "door_closed".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
 
   ![door_closed](/images/IFTTT2.JPG)
-13. (Optional) You may optionally create an additional applet which will send out an email at midnight every day giving you confirmation that your door monitor is still working, and the last time the garage door was closed.  (If this feature is not desired, the related part of the sketch can be removed.)  This applet also has "Maker" as the trigger and Gmail as the action. Call the Maker event name "door_monitor_active".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
+13. (Optional) You may optionally create an additional applet which will send out an email at midnight every day giving you confirmation that your door monitor is still working, and the last time the garage door was closed.  (If this feature is not desired, the related part of the sketch can be removed.)  This applet also has Webhook as the trigger and Gmail as the action. Call the Webhook event name "door_monitor_active".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
 
   ![door_monitor_active](/images/IFTTT3.JPG)
 14. Solder together your garage door monitor, install it in your garage, and plug it in.  If using an OLED display, connect display to the I2C headers using 4" female-female jumper wires, taking care to match the 3V3 and GND on the display to the board.    
