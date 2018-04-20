@@ -14,14 +14,16 @@
  */
 
 //#define ADAFRUIT_IO  // Uncomment if using Adafruit IO account
-//#define OLED_DISPLAY // Uncomment if using an OLED Display
+#define OLED_DISPLAY // Comment out if not using an OLED Display
 
 #include <NTPClient.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <WiFiManager.h>
 #include <TimeLib.h>
 #include <Timezone.h>
 #include <ArduinoJson.h>
+#include <EEPROM.h>
 
 #ifdef OLED_DISPLAY
 #include <Adafruit_GFX.h>
@@ -33,7 +35,6 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 #endif
-
 
 #define D0 16 // LED_BUILTIN
 #define D1 5 // I2C Bus SCL (clock)
@@ -50,27 +51,39 @@
 #define OPEN HIGH  //  For normally open read switch, OPEN = HIGH.  Swap if using normally closed switch
 #define CLOSED LOW
 
-const char* ssid = "**********Add SSID Here*********";
-const char* password = "***********Add Password Here*********";
+// Timezone and DST EEPROM addresses
+char tz_str[4], dst_str[2];
+#define TZ_ADDR  0
+#define TZ_LENGTH 4
+#define DST_ADDR 4
+#define DST_LENGTH 2
 
 // IFTTT
 const char* host = "maker.ifttt.com";
-const char* apiKey = "************Add IFTTT API Key Here**********";
+#define API_KEY_LENGTH 50
+#define API_KEY_ADDR TZ_LENGTH + DST_LENGTH  // First six bytes store time zone info
+char apiKey[API_KEY_LENGTH];
 
-#ifdef ADAFRUIT_IO
-// **** Adafruit IO Setup ****//
-#define AIO_SERVER      "io.adafruit.com"
-#define AIO_SERVERPORT  1883
-#define AIO_USERNAME  "************Add Adafruit Username Here***********"
-#define AIO_KEY "*********Add Adafruit IO Key Here***************"
+#ifdef ADAFRUIT_IO  // **** Adafruit IO Setup ****//
+  #define AIO_SERVER      "io.adafruit.com"
+  #define AIO_SERVERPORT  1883
+  #define AIO_USERNAME_LENGTH 50
+  #define AIO_KEY_LENGTH 50
+  #define AIO_USERNAME_ADDR API_KEY_ADDR + API_KEY_LENGTH
+  #define AIO_KEY_ADDR AIO_USERNAME_ADDR + AIO_USERNAME_LENGTH
 
-// Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
-WiFiClient mqtt_client;
-Adafruit_MQTT_Client mqtt(&mqtt_client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
+  char aioUsername[AIO_USERNAME_LENGTH], aioKey[AIO_KEY_LENGTH], aioFeed[AIO_USERNAME_LENGTH+20];  
 
-// Setup garage door feed
-Adafruit_MQTT_Publish garage_door = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/garage-door");
-// ** Adafruit IO Setup Complete ****//
+  // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
+  WiFiClient mqtt_client;
+  Adafruit_MQTT_Client mqtt(&mqtt_client, AIO_SERVER, AIO_SERVERPORT, aioUsername, aioKey);
+
+  // Setup garage door feed
+  Adafruit_MQTT_Publish garage_door = Adafruit_MQTT_Publish(&mqtt, aioUsername);
+  
+  #define EEPROM_LENGTH TZ_LENGTH + DST_LENGTH + API_KEY_LENGTH + AIO_USERNAME_LENGTH + AIO_KEY_LENGTH
+#else
+  #define EEPROM_LENGTH TZ_LENGTH + DST_LENGTH + API_KEY_LENGTH
 #endif
 
 const char* month_names[] = {"Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
@@ -78,7 +91,7 @@ const char* day_names[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday
 const char* am_pm[] = {"AM", "PM"};
 const char* door_open_closed[] = {"Door closed", "Door open"};
 
-//US Pacific Time Zone
+// US Pacific Time Zone -- Time zone is configurable in EEPROM
 TimeChangeRule myDST = {"PDT", Second, Sun, Mar, 2, -420};    //Daylight time = UTC - 7 hours
 TimeChangeRule mySTD = {"PST", First, Sun, Nov, 2, -480};     //Standard time = UTC - 8 hours
 Timezone myTZ(myDST, mySTD);
@@ -111,6 +124,8 @@ Adafruit_SSD1306 display(OLED_RESET);
 #endif
 
 void setup() {
+  int i;
+  
   Serial.begin(115200);
 
   pinMode(STANDBY, INPUT_PULLUP);
@@ -132,11 +147,143 @@ void setup() {
   
   status_leds(1, 0, 0, 0); // Solid red at turn-on
 
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  
+  EEPROM.begin(EEPROM_LENGTH);
+
+  // Read info from EEPROM
+  eepromRead(tz_str, TZ_ADDR, TZ_LENGTH);
+  eepromRead(dst_str, DST_ADDR, DST_LENGTH);
+  eepromRead(apiKey, API_KEY_ADDR, API_KEY_LENGTH);
+  
+  #ifdef ADAFRUIT_IO
+    eepromRead(aioUsername, AIO_USERNAME_ADDR, AIO_USERNAME_LENGTH);
+    eepromRead(aioKey, AIO_KEY_ADDR, AIO_KEY_LENGTH);
+  #endif
+    
+  // Setup WiFiManager
+
+  WiFiManager MyWifiManager;
+  MyWifiManager.setAPCallback(configModeCallback);
+  
+  WiFiManagerParameter custom_api_text("<br/><br/><br/>IFTTT API Key:<br/>");
+  MyWifiManager.addParameter(&custom_api_text);
+  
+  WiFiManagerParameter custom_api_key("apikey", "API Key", apiKey, API_KEY_LENGTH);
+  MyWifiManager.addParameter(&custom_api_key);
+
+  WiFiManagerParameter custom_timezone_text("<br/><br/><br/>Standard Time Zone Offset (US Pacific = -8, US Eastern = -5, GMT = 0) :<br/>");
+  MyWifiManager.addParameter(&custom_timezone_text);
+  
+  WiFiManagerParameter custom_timezone("timezone", "Time Zone", tz_str, TZ_LENGTH);
+  MyWifiManager.addParameter(&custom_timezone);
+
+  WiFiManagerParameter custom_dst_text("<br/><br/><br/>Enable US Daylight Savings Time rules? (Y/N):<br/>");
+  MyWifiManager.addParameter(&custom_dst_text);
+  
+  WiFiManagerParameter custom_dst("dst", "DST", dst_str, DST_LENGTH);
+  MyWifiManager.addParameter(&custom_dst);
+
+  #ifdef ADAFRUIT_IO
+    WiFiManagerParameter custom_aio_username_text("<br/><br/><br/>Adafruit IO Username:<br/>");
+    MyWifiManager.addParameter(&custom_aio_username_text);
+  
+    WiFiManagerParameter custom_aio_username("aio_username", "Adafruit IO Username", aioUsername, AIO_USERNAME_LENGTH);
+    MyWifiManager.addParameter(&custom_aio_username);
+
+    WiFiManagerParameter custom_aio_key_text("<br/><br/><br/>Adafruit IO Key:<br/>");
+    MyWifiManager.addParameter(&custom_aio_key_text);
+  
+    WiFiManagerParameter custom_aio_key("aio_key", "Adafruit IO Key", aioKey, AIO_KEY_LENGTH);
+    MyWifiManager.addParameter(&custom_aio_key);
+  #endif
+
+  MyWifiManager.autoConnect("GARAGE_DOOR");
+
+
+  bool saveEEPROM = false;
+  if (strcmp(apiKey, custom_api_key.getValue()) || strcmp(tz_str, custom_timezone.getValue()) || strcmp(dst_str, custom_dst.getValue())) {  // If data changed, need to save to EEPROM
+    saveEEPROM = true;
   }
+  #ifdef ADAFRUIT_IO
+    if (strcmp(aioKey, custom_aio_key.getValue()) || strcmp(aioUsername, custom_aio_username.getValue())) {  
+      saveEEPROM = true;
+    }  
+  #endif
+
+  if (saveEEPROM) {
+    strcpy(tz_str, custom_timezone.getValue());
+    for (i=0; i<TZ_LENGTH; i++) {
+      EEPROM.write(TZ_ADDR+i, tz_str[i]);
+    }
+    
+    strcpy(dst_str, custom_dst.getValue());
+    for (i=0; i<DST_LENGTH; i++) {
+      EEPROM.write(DST_ADDR+i, dst_str[i]);
+    }
+    
+    strcpy(apiKey, custom_api_key.getValue());
+    for (i=0; i<API_KEY_LENGTH; i++) {
+      EEPROM.write(API_KEY_ADDR+i, apiKey[i]);
+    }
+    
+    #ifdef ADAFRUIT_IO
+      strcpy(aioUsername, custom_aio_username.getValue());
+      for (i=0; i<AIO_USERNAME_LENGTH; i++) {
+        EEPROM.write(AIO_USERNAME_ADDR+i, aioUsername[i]);
+      }  
+      
+      strcpy(aioKey, custom_aio_key.getValue());
+      for (i=0; i<AIO_KEY_LENGTH; i++) {
+        EEPROM.write(AIO_KEY_ADDR+i, aioKey[i]);
+      }   
+    #endif
+    
+    EEPROM.commit();
+  }
+
+  // Update timezone info
+  int tz = atoi(tz_str);
+  if (tz < -24 || tz > 24) tz = 0; 
+  mySTD.offset = tz*60;
+
+  if (dst_str[0] == 'y' || dst_str[0] == 'Y') {
+    myDST.offset = mySTD.offset + 60;
+    switch (tz) {
+      case -8:
+        strcpy(mySTD.abbrev, "PST");
+        strcpy(myDST.abbrev, "PDT");
+        break;
+      case -7:
+        strcpy(mySTD.abbrev, "MST");
+        strcpy(myDST.abbrev, "MDT");
+        break;        
+      case -6:
+        strcpy(mySTD.abbrev, "CST");
+        strcpy(myDST.abbrev, "CDT");
+        break; 
+      case -5:
+        strcpy(mySTD.abbrev, "EST");
+        strcpy(myDST.abbrev, "EDT");
+        break;    
+      default:   
+        strcpy(mySTD.abbrev, "STD");
+        strcpy(myDST.abbrev, "DST");  
+    }
+  }
+  else {
+    myDST.offset = mySTD.offset;
+      strcpy(mySTD.abbrev, "");
+      strcpy(myDST.abbrev, "");
+  }
+  myTZ = Timezone(myDST, mySTD);
+
+#ifdef ADAFRUIT_IO
+  mqtt = Adafruit_MQTT_Client(&mqtt_client, AIO_SERVER, AIO_SERVERPORT, aioUsername, aioKey);
+  strcpy(aioFeed,aioUsername); // Add feed
+  strcat(aioFeed, "/feeds/garage-door"); // Add feed
+  garage_door = Adafruit_MQTT_Publish(&mqtt, aioFeed);
+#endif
+    
   wifiStatus = 1;
   Serial.println(" Connected");
 
@@ -421,6 +568,13 @@ void readStandbyButton() {
       }
     }
   }
+
+  if (((millis() - lastDebounceTime) > 5000) && (buttonReading == LOW)) {  // Button has been depressed for 5 seconds
+     WiFiManager MyWifiManager;
+     MyWifiManager.resetSettings();  // Reset WIFI
+     delay(1000);
+     ESP.restart();
+  }
   lastButtonState = buttonReading;
 }
 
@@ -438,5 +592,26 @@ int readDoorStatus() {
   return(digitalRead(DOOR)); 
 }
 
+void configModeCallback (WiFiManager *myWiFiManager) {
+#ifdef OLED_DISPLAY 
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("GARAGE DOOR MONITOR");
+  display.println("WIFI SETUP");
+  display.setCursor(0,23);
+  display.println("To configure Wifi,  ");
+  display.println("connect to Wifi ");
+  display.println("network GARAGE_DOOR");
+  display.println("and open 192.168.4.1");
+  display.println("in web browser");
+  display.display();   
+#endif
+}
 
+void eepromRead(char *str, int addr, int len) {
+  for (int i=0; i<len; i++) {
+    str[i] = EEPROM.read(addr+i);
+  }
+  str[len-1] = '\0'; // Ensures last byte will be null character
+}
 
