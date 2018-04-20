@@ -10,8 +10,9 @@ Features:
 * Synchronization with NIST time
 * Enable/disable button, which can temporarily disable the monitor
 * RGB LED indicating monitor status
+* OLED Display
+* Configurable settings via WiFi access point
 * (Optional) logging of door status via Adafruit IO
-* (Optional) OLED Display
 
 The following parts are required, as pictured below:
 * NodeMCU V1.0 development board (sometimes also listed as v2 at online shops such as eBay or AliExpress)
@@ -50,9 +51,16 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
   
 5. (Optional) If using Adafruit IO, set up and account at https://io.adafruit.com/.  Record your username and Adafruit IO key for later use.  Add a feed called "garage-door" to your Adafruit IO account.
 6. Solder together your garage door monitor, install it in your garage, and plug it in.  If using an OLED display, connect display to the I2C headers using 4" female-female jumper wires, taking special care to match the 3V3 and GND on the display to the board.  Swapping 3V3 and GND will fry your OLED.    
-  * **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
+    * **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
 7. Print out a case on a 3D printer, or design your own.  Two case designs are provided in the "cases" folder. Assemble case and electronics.
-8. Flash software to ESP8266 using a micro-USB cable.  This can be done one of two ways: a) Use the compiled .bin files included in the repository, or b) compile and flash the firmware using the Arduino IDE.  I have included two different compiled version.  The file monitor_with_aio.bin should be used if you wish to log the garage door status using Adafruit IO.  The file monitor_without_aio.bin is used if you do not wish to log the status.  Both support the IFTTT web service to email and text message you.  Both also support the OLED screen.  If using one of these files, I recommend using esptool at https://github.com/espressif/esptool to flash the esp8266.  If compiling and flashing using the Arduino IDE, please see the Special Instructions for Compiling and Flashing Firmware Using Arduino IDE at the end of this Readme file.
+8. Flash software to ESP8266 using a micro-USB cable.  This can be done one of two ways: a) Use the compiled .bin files included in the repository, or b) compile and flash the firmware using the Arduino IDE.  I have included two different compiled version.  The file monitor_with_aio.bin should be used if you wish to log the garage door status using Adafruit IO.  The file monitor_without_aio.bin is used if you do not wish to log the status.  Both support the IFTTT web service to email and text message you.  Both also support the OLED screen.  If using one of these files, I recommend using esptool at https://github.com/espressif/esptool to flash the esp8266.  After installing esptool, the following line is used to flash the ESP8266:
+
+    `esptool.py --port COM6 write_flash 0x0000 monitor_without_aio.bin`
+  
+    where COM6 should be replaced by whatever com port your device is plugged into. (In Windows, this is discoverable using the Device Monitor.) 
+
+    If compiling and flashing using the Arduino IDE, please see the Special Instructions for Compiling and Flashing Firmware Using Arduino IDE at the end of this Readme file.
+
 9. Power garage door monitor using a 5V micro-USB power supply.  When powered for the first time, the monitor will create a WiFi access point calle GARAGE_DOOR.  Look for a WiFi network called GARAGE_DOOR on your computer, tablet, or phone and connect to it.  (If you don't see one within 30 seconds, it may need to have its settings reset.  Hold down the button for 5 seconds and then cycle the power.)  Your web browser may automatically open up a web page at 192.168.4.1.  If not, connect to this IP address in a browser.  The web page will appear as shown below.  Press "Configure WiFi" and enter in your SSID and password credentials as shown below.  Add the IFTTT API_KEY that you recorded from IFTTT.  Enter in your time zone as indicated, and whether you wish to have the monitor automatically adjust for daylight savings time using US DST rules.  (Enter Y even if it is not currently DST as it will use the date to determine when to adust.) If using the Adafruit IO option, you will also see an entry for Adafruit IO username and key.  Press "save" and the garage door monitor will automatically connect to your WiFi network.
 
   ![wifi_accesspoint](/images/configureWifi.JPG) 
