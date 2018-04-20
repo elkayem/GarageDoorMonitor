@@ -39,20 +39,27 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 2. In IFTTT, create a new applet.  You should see a sentence that says "if +this then that".  Press "+this", and choose the "Webhook" service.  Select the "Receive a web request" trigger.  Call the event "door_open", and create the trigger. Next, press "+that" (from the "if this then that" sentence) and choose the Gmail service.  Select the "Send and email" action.    Choose Gmail as the action (the "then that" part).  Place the desired emails on the To line (text messages can also be sent depending on the provider, e.g., as xxxxxxxxxx@txt.att.net).  Fill out the Subject as: Garage Door Open for  "{{Value1}}" Minutes.  Fill out the body as: The Garage Door was opened at {{Value1}} and has been open for {{Value2}} minutes.  Press the "Create action" buttong.  It should look as shown below:
 
   ![door_open](/images/IFTTT1.JPG)
+  
 3. Create another applet in IFTTT with Webhook as the trigger and Gmail as the action.  Call the Webhook event name "door_closed".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
 
   ![door_closed](/images/IFTTT2.JPG)
+  
 4. Create an additional applet which will send out an email at midnight every day giving you confirmation that your door monitor is still working, and the last time the garage door was closed.  This applet also has Webhook as the trigger and Gmail as the action. Call the Webhook event name "door_monitor_active".  Put in the desired email(s) for the Gmail action and fill out the Subject and Body as shown below:
 
   ![door_monitor_active](/images/IFTTT3.JPG)
+  
 5. (Optional) If using Adafruit IO, set up and account at https://io.adafruit.com/.  Record your username and Adafruit IO key for later use.  Add a feed called "garage-door" to your Adafruit IO account.
 6. Solder together your garage door monitor, install it in your garage, and plug it in.  If using an OLED display, connect display to the I2C headers using 4" female-female jumper wires, taking special care to match the 3V3 and GND on the display to the board.  Swapping 3V3 and GND will fry your OLED.    
   * **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
 7. Print out a case on a 3D printer, or design your own.  Two case designs are provided in the "cases" folder. Assemble case and electronics.
 8. Flash software to ESP8266 using a micro-USB cable.  This can be done one of two ways: a) Use the compiled .bin files included in the repository, or b) compile and flash the firmware using the Arduino IDE.  I have included two different compiled version.  The file monitor_with_aio.bin should be used if you wish to log the garage door status using Adafruit IO.  The file monitor_without_aio.bin is used if you do not wish to log the status.  Both support the IFTTT web service to email and text message you.  Both also support the OLED screen.  If using one of these files, I recommend using esptool at https://github.com/espressif/esptool to flash the esp8266.  If compiling and flashing using the Arduino IDE, please see the Special Instructions for Compiling and Flashing Firmware Using Arduino IDE at the end of this Readme file.
 9. Power garage door monitor using a 5V micro-USB power supply.  When powered for the first time, the monitor will create a WiFi access point calle GARAGE_DOOR.  Look for a WiFi network called GARAGE_DOOR on your computer, tablet, or phone and connect to it.  (If you don't see one within 30 seconds, it may need to have its settings reset.  Hold down the button for 5 seconds and then cycle the power.)  Your web browser may automatically open up a web page at 192.168.4.1.  If not, connect to this IP address in a browser.  The web page will appear as shown below.  Press "Configure WiFi" and enter in your SSID and password credentials as shown below.  Add the IFTTT API_KEY that you recorded from IFTTT.  Enter in your time zone as indicated, and whether you wish to have the monitor automatically adjust for daylight savings time using US DST rules.  (Enter Y even if it is not currently DST as it will use the date to determine when to adust.) If using the Adafruit IO option, you will also see an entry for Adafruit IO username and key.  Press "save" and the garage door monitor will automatically connect to your WiFi network.
-  ![wifi_accesspoint](/images/configureWifi.JPG) ![wifi_manager](/images/wifiManager.JPG)
-18. Install in your garage and enjoy!  
+
+  ![wifi_accesspoint](/images/configureWifi.JPG) 
+  
+  ![wifi_manager](/images/wifiManager.JPG)
+  
+10. Install in your garage and enjoy!  
 
 The LED will be red at turn-on, and will change to green once it has connected to WiFi and synced with NIST time.  When the garage door is shut, the light will remain green.  If open, it will change to magenta for 15 minutes, and will then change to red after it has sent out its first email.  Pressing the tactile button will cause the light to blink blue, and the monitor will not send any emails for 2 hours, or whenever the button is pushed again, which ever comes first.  Any failure to connect to WiFi will cause the monitor to blink red until it is able to reconnect.
 
