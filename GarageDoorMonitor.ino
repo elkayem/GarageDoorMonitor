@@ -465,8 +465,11 @@ int sendAdaIO()
   return(1);
 }
 
+
 int sendIFTTT(String url)
 {
+  static int ifttt_retry = 0;
+  
   Serial.print("connecting to ");
   Serial.println(host);
   char buffer[256];
@@ -497,10 +500,30 @@ int sendIFTTT(String url)
 
   client.print(String("POST ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
+			         "Connection: close\r\n" +
                "Content-Type: application/json\r\n" +
                "Content-Length: " + root.measureLength() + "\r\n\r\n" +
                buffer + "\r\n");
-  return (1);
+  
+  while(client.connected()) {
+    if(client.available()) {
+      String line = client.readStringUntil('\r');
+      Serial.print(line);
+      if (line.length() > 2) { // IFFT returns a message when it receives a signal
+        ifttt_retry = 0;
+        return(1);
+      }
+    } else {
+      delay(50);
+    }             
+  }
+
+  if (ifttt_retry > 2) {  // Try a maximum of 3 times
+    ifttt_retry = 0;
+    return(1);
+  }
+  ifttt_retry++;
+  return (0);  // Returning zero will cause this function to be called again
 }
 
 void status_leds(bool red, bool green, bool blue, bool blink)
