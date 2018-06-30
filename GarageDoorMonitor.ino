@@ -1,6 +1,6 @@
 /*    
  *    GarageDoorMonitor
- *	  Copyright (C) 2017  Larry McGovern
+ *	  Copyright (C) 2018  Larry McGovern
  *	
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -321,12 +321,7 @@ void loop()
   }
   blink_leds();
   readStandbyButton();
-  if (standbyMode) {
-    if (millis() - standbyModeTime > STANDBY_TIMEOUT)
-      standbyMode = 0;  // Automatically go out of standby mode after timeout period
-    else
-      return;
-  }
+
   if (millis() - lastCheckTime < DOOR_CHECK_PERIOD) return; 
   
   doorStatus = readDoorStatus();
@@ -352,6 +347,20 @@ void loop()
     doorStatusPrev = doorStatus;   
   }
 
+  if (standbyMode) {
+    if (millis() - standbyModeTime > STANDBY_TIMEOUT) {
+      standbyMode = 0;  // Automatically go out of standby mode after timeout period
+      if (doorStatus == CLOSED)
+        status_leds(0, 1, 0, 0); // Door shut, status = Green
+      else {
+        changeTimer = millis();  // Reset change timer
+        status_leds(1, 0, 1, 0); // Door open, status = Magenta
+      }
+    } 
+    else
+      return;
+  }
+  
   if ( (doorStatus == OPEN) && (millis() - changeTimer > TIMER_MS)) { // Door has been open for at least 15 minutes
     if (!sendIFTTT("/trigger/door_open/with/key/")) return; // Send door open message, return if failed
     changeTimer = millis();
