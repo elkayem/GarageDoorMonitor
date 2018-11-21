@@ -22,6 +22,7 @@ The following parts are required, as pictured below:
 * Common Anode RGB LED
 * Screw Terminal Block (2 pin 3.5mm Pitch)
 * 6x6mm tactile button
+* 10K resistor
 * (3) 300 Ohm resistors
 * (Optional) 4-pin male header
 * (Optional) Printed Circuit Board (Eagle files included)
@@ -51,7 +52,8 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
   
 5. (Optional) If using Adafruit IO, set up and account at https://io.adafruit.com/.  Record your username and Adafruit IO key for later use.  Add a feed called "garage-door" to your Adafruit IO account.
 6. Solder together your garage door monitor, install it in your garage, and plug it in.  If using an OLED display, connect display to the I2C headers using 4" female-female jumper wires, taking special care to match the 3V3 and GND on the display to the board.  Swapping 3V3 and GND will fry your OLED.    
-    * **Important Note:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
+    * **Note #1:** Take care to solder the RGB LED pins in the correct order.  The longest pin is the common anode, which should be soldered in the hole second from the left, where the NodeMCU is on the left side of the board.  The LED case also has a flat edge, which should match the flat edge shown on the board silkscreen.
+    * **Note #2:** If you happen to have one of the old PCBs that does not include a 10K resistor on the front of the PCB, you will need to solder a 10K pull-up resistor on the back of the PCB as pictured [here](/images/IMG_2138.JPG).  The PCB pictured on this page above is the old design, with only three resistors on the front, whereas the new PCB has four resistors on the front.  
 7. Print out a case on a 3D printer, or design your own.  Two case designs are provided in the "cases" folder. Assemble case and electronics.
 8. Flash software to ESP8266 using a micro-USB cable.  This can be done one of two ways: a) Use the compiled .bin files included in the repository, or b) compile and flash the firmware using the Arduino IDE.  I have included two different compiled version.  The file monitor_with_aio.bin should be used if you wish to log the garage door status using Adafruit IO.  The file monitor_without_aio.bin is used if you do not wish to log the status.  Both support the IFTTT web service to email and text message you.  Both also support the OLED screen.  If using one of these files, I recommend using esptool at https://github.com/espressif/esptool to flash the esp8266.  After installing esptool, the following line is used to flash the ESP8266:
 
@@ -61,7 +63,7 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 
     If compiling and flashing using the Arduino IDE, please see the Special Instructions for Compiling and Flashing Firmware Using Arduino IDE at the end of this Readme file.
 
-9. Power garage door monitor using a 5V micro-USB power supply.  When powered for the first time, the monitor will create a WiFi access point calle GARAGE_DOOR.  Look for a WiFi network called GARAGE_DOOR on your computer, tablet, or phone and connect to it.  (If you don't see one within 30 seconds, it may need to have its settings reset.  Hold down the button for 5 seconds and then cycle the power.)  Your web browser may automatically open up a web page at 192.168.4.1.  If not, connect to this IP address in a browser.  The web page will appear as shown below.  Press "Configure WiFi" and enter in your SSID and password credentials as shown below.  Add the IFTTT API_KEY that you recorded from IFTTT.  Enter in your time zone as indicated, and whether you wish to have the monitor automatically adjust for daylight savings time using US DST rules.  (Enter Y even if it is not currently DST as it will use the date to determine when to adust.) If using the Adafruit IO option, you will also see an entry for Adafruit IO username and key.  Press "save" and the garage door monitor will automatically connect to your WiFi network.
+9. Power garage door monitor using a 5V micro-USB power supply.  When powered for the first time, the monitor will create a WiFi access point called GARAGE_DOOR.  Look for a WiFi network called GARAGE_DOOR on your computer, tablet, or phone and connect to it (default password is PASSWORD, which can be modified in the source code).  (If you don't see one within 30 seconds, it may need to have its settings reset.  Hold down the button for 5 seconds and then cycle the power.)  Your web browser may automatically open up a web page at 192.168.4.1.  If not, connect to this IP address in a browser.  The web page will appear as shown below.  Press "Configure WiFi" and enter in your SSID and password credentials as shown below.  Add the IFTTT API_KEY that you recorded from IFTTT.  Enter in your time zone as indicated, and whether you wish to have the monitor automatically adjust for daylight savings time using US DST rules.  (Enter Y even if it is not currently DST as it will use the date to determine when to adust.) If using the Adafruit IO option, you will also see an entry for Adafruit IO username and key.  Press "save" and the garage door monitor will automatically connect to your WiFi network.
 
   ![wifi_accesspoint](/images/configureWifi.JPG) 
   
@@ -75,13 +77,13 @@ If you ever wish to reset the SSID credentials, IFTTT key, or other settings, pr
 
 # Special Instructions for Compiling and Flashing Firmware Using Arduino IDE
 1. Configure Arduino IDE
-  1. Install Arduino IDE 1.8.1 (or later) from arduino.cc
+  1. Install Arduino IDE 1.8.7 (or later) from arduino.cc
   2. Open File>Preferences, and enter the following URL into "Additional Board Manager URLs": http://arduino.esp8266.com/stable/package_esp8266com_index.json
-  3. In the Tools menu, configure Board: NodeMCU 1.0 (ESP-12E Module), CPU Frequency: 80 MHz, Upload Speed: 115200.
+  3. Open Tools>Board>Board Manager and install the esp8266 boards.  I am currently using v2.4.2, but later versions should also work.
+  4. In the Tools menu, configure Board: NodeMCU 1.0 (ESP-12E Module), CPU Frequency: 80 MHz, Upload Speed: 115200.
 2. (Optional) If logging is desired, uncomment #define ADAFRUIT_IO and 
-3. Install the following libraries: NTPClient, ESP8266WiFi, WiFi, WiFiManager, Time, Timezone, ArduinoJson, and Adafruit_MQTT, Adafruit_GFX, and Adafruit_SSID1306.  Most of these libraries are added through the Library Manager (Sketch > Include Library > Manage Libraries).  The only exception is Timezone, which must be manually installed from https://github.com/JChristensen/Timezone.  
-4. If not using an OLED display, you can commant out the line #define OLED_DISPLAY in the sketch.  Otherwise, make sure the libraries Adafruit_GFX and Adafruit_SSD1306 are installed.  In the file Adafruit_SSD1306.h (found in the folder Arduino\libraries\Adafruit_SSD1306, where 
-"Arduino" is your top level Arduino directory), uncomment the line #define SSD1306_128_64, and comment out all other displays. **Important Note:** If you don't do the above step, the library will assume you are using a 32-pixel display and the displayed text will not fit on the screen.
+3. Install the following libraries.  I have indicated which versions I am currently using, though in most cases later versions should work: NTPClient (3.1.0), WiFi (1.2.7), WiFiManager (0.14.0), Time (1.5.0), Timezone (1.2.2), ArduinoJson (5.13.3, **Note:** as of 11/20/2018, later versions of ArduinoJson do not work with this code), Adafruit_MQTT (0.20.3), Adafruit_GFX (1.2.9), and Adafruit_SSD1306 (1.2.8).  All of these libraries are added through the Library Manager (Sketch > Include Library > Manage Libraries).
+4. If not using an OLED display, you can commant out the line #define OLED_DISPLAY in the sketch.  Otherwise, make sure the libraries Adafruit_GFX and Adafruit_SSD1306 are installed.   
 5. Connect the NodeMCU board to your computer using a micro USB cable, and set Tools>Port to the new port that appears.  Your computer should automatically install the driver, but if it does not, you may need to manually download and install the CP2102 driver from http://www.silabs.com/products/mcu/pages/usbtouartbridgevcpdrivers.aspx.  
 6. Press the Upload button to compile the sketch and upload to the NodeMCU.  The most common reason for failing to compile are an selecting the wrong board or not installing all the required libraries.
 

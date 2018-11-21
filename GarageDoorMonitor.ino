@@ -100,7 +100,7 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.nist.gov", 0, 7200000); // Update time every two hours
 
 int wifiStatus, doorStatus, doorStatusPrev = CLOSED, openMessage = false;
-unsigned long int changeTime, changeTimer, lastCheckTime, standbyModeTime;
+unsigned long int changeTime, changeTimer, lastCheckTime, standbyModeTime, resetTimer;
 char changeTimeStr[50], closeTimeStr[20];
 int dailyMessageSent;
 int prevSecond;
@@ -117,10 +117,13 @@ bool redState, greenState, blueState, blinkState, standbyMode = 0;
 #define BLINK_PERIOD 500
 #define DOOR_CHECK_PERIOD 100   // Check door status every 100 msec
 #define STANDBY_TIMEOUT 7200000  // Automatically go out of standby mode after 2 hours
+#define WIFI_RESET_TIMEOUT 1800000 // Reboot if wifi drops out for more than 30 minutes
 
 #ifdef OLED_DISPLAY
-#define OLED_RESET  D8
-Adafruit_SSD1306 display(OLED_RESET);
+  #define SCREEN_WIDTH 128 // OLED display width, in pixels
+  #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+  #define OLED_RESET  D8
+  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #endif
 
 void setup() {
@@ -129,7 +132,7 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(STANDBY, INPUT_PULLUP);
-  pinMode(DOOR, INPUT);  // GPIO16 does not have a pull-up resistor.  See work-around in readDoorStatus
+  pinMode(DOOR, INPUT);  // GPIO16 does not have a pull-up resistor, must be added externally
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BLUE_LED, OUTPUT);
@@ -197,7 +200,12 @@ void setup() {
     MyWifiManager.addParameter(&custom_aio_key);
   #endif
 
-  MyWifiManager.autoConnect("GARAGE_DOOR");
+  MyWifiManager.setTimeout(900);  // Timeout after 15 minutes
+  if(!MyWifiManager.autoConnect("GARAGE_DOOR","PASSWORD")) {
+    delay(3000);
+    ESP.restart();  // Reboot if timeout
+    delay(5000);
+  }
 
 
   bool saveEEPROM = false;
@@ -322,13 +330,22 @@ void loop()
   blink_leds();
   readStandbyButton();
 
+  if (!wifiStatus) {
+    if (millis() - resetTimer > WIFI_RESET_TIMEOUT) {
+       delay(3000);
+       ESP.restart();  // Reboot if timeout
+       delay(5000);
+    }
+  }
+  else resetTimer = millis();
+
   if (millis() - lastCheckTime < DOOR_CHECK_PERIOD) return; 
   
-  doorStatus = readDoorStatus();
+  doorStatus = digitalRead(DOOR);
   
   if (doorStatus != doorStatusPrev) { // Door has opened or closed
     
-    delay(500);  doorStatus = readDoorStatus();  // Resample after 500 msec, to filter out glitches
+    delay(500);  doorStatus = digitalRead(DOOR);  // Resample after 500 msec, to filter out glitches
 
     if (doorStatus == doorStatusPrev) return;     // Return if change in status was a glitch
     
@@ -473,8 +490,7 @@ int sendAdaIO()
 #endif
   return(1);
 }
-
-
+  
 int sendIFTTT(String url)
 {
   static int ifttt_retry = 0;
@@ -513,19 +529,19 @@ int sendIFTTT(String url)
                "Content-Type: application/json\r\n" +
                "Content-Length: " + root.measureLength() + "\r\n\r\n" +
                buffer + "\r\n");
-  
-  while(client.connected()) {
-    if(client.available()) {
-      String line = client.readStringUntil('\r');
-      Serial.print(line);
-      if (line.length() > 2) { // IFFT returns a message when it receives a signal
-        ifttt_retry = 0;
-        return(1);
+ 
+  while (client.connected() || client.available()) {
+    if (client.available()) {
+        String line = client.readStringUntil('\n');
+        Serial.println(line);
+        if (line.length() > 2) { // IFFT returns a message when it receives a signal
+          ifttt_retry = 0;
+          client.stop();
+          return(1);
+        }
       }
-    } else {
-      delay(50);
-    }             
   }
+  client.stop();
 
   if (ifttt_retry > 2) {  // Try a maximum of 3 times
     ifttt_retry = 0;
@@ -588,7 +604,7 @@ void readStandbyButton() {
           Serial.println("Standby Mode");
         }
         else {
-          if (readDoorStatus() == CLOSED) {
+          if (digitalRead(DOOR) == CLOSED) {
             status_leds(0, 1, 0, 0); // Door shut, status = Green
           }
           else {
@@ -610,30 +626,16 @@ void readStandbyButton() {
   lastButtonState = buttonReading;
 }
 
-int readDoorStatus() {
-  // Note: on NodeMCU modules with a blue LED, once D0 (GPIO16) is connected to ground and the blue LED is lit,
-  // it will stay dimly lit after the D0 circuit is opened again, with GPIO pulled to 0.9V.  The consequence
-  // is that digitalRead(DOOR) will continue to return LOW.  On NodeMCU modules with a red LED, the LED forward 
-  // voltage is small enough to pull up GPIO16 (D0) enough for digitalRead(DOOR) to read HIGH when the switch is open.
-  // The following four lines are a workaround for units with a blue LED     
-  pinMode(DOOR,OUTPUT);
-  digitalWrite(DOOR,HIGH);
-  delay(1);
-  pinMode(DOOR,INPUT); 
-  
-  return(digitalRead(DOOR)); 
-}
-
 void configModeCallback (WiFiManager *myWiFiManager) {
 #ifdef OLED_DISPLAY 
   display.clearDisplay();
   display.setCursor(0,0);
   display.println("GARAGE DOOR MONITOR");
   display.println("WIFI SETUP");
-  display.setCursor(0,23);
   display.println("To configure Wifi,  ");
   display.println("connect to Wifi ");
   display.println("network GARAGE_DOOR");
+  display.println("password: PASSWORD");
   display.println("and open 192.168.4.1");
   display.println("in web browser");
   display.display();   
@@ -646,4 +648,3 @@ void eepromRead(char *str, int addr, int len) {
   }
   str[len-1] = '\0'; // Ensures last byte will be null character
 }
-

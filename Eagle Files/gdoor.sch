@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="7.7.0">
+<eagle version="9.2.2">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
+<setting keepoldvectorfont="yes"/>
 <setting verticaltext="up"/>
 </settings>
 <grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
@@ -5051,32 +5052,89 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <part name="+3V1" library="supply1" deviceset="+3V3" device=""/>
 <part name="LED" library="adafruit" deviceset="RGBLED_CA" device="-5MM"/>
 <part name="+3V3" library="supply1" deviceset="+3V3" device=""/>
+<part name="R4" library="resistor" deviceset="R-US_" device="0207/10" value="10K"/>
+<part name="+3V2" library="supply1" deviceset="+3V3" device=""/>
 </parts>
 <sheets>
 <sheet>
 <plain>
 </plain>
 <instances>
-<instance part="FRAME1" gate="G$1" x="0" y="0"/>
-<instance part="FRAME1" gate="G$2" x="83.82" y="0"/>
-<instance part="NODEMCU_L" gate="A" x="71.12" y="114.3"/>
-<instance part="NODEMCU_R" gate="A" x="86.36" y="114.3" rot="R180"/>
-<instance part="GND5" gate="1" x="60.96" y="93.98"/>
-<instance part="I2C" gate="A" x="144.78" y="129.54"/>
-<instance part="+3V5" gate="G$1" x="134.62" y="137.16"/>
-<instance part="GND6" gate="1" x="129.54" y="132.08" rot="R270"/>
-<instance part="GND8" gate="1" x="96.52" y="93.98"/>
-<instance part="GND10" gate="1" x="81.28" y="114.3"/>
-<instance part="DOOR" gate="G$1" x="142.24" y="152.4" rot="R180"/>
-<instance part="GND12" gate="1" x="134.62" y="144.78"/>
-<instance part="STANDBY" gate="1" x="142.24" y="114.3" rot="R270"/>
-<instance part="GND1" gate="1" x="147.32" y="109.22"/>
-<instance part="R1" gate="G$1" x="129.54" y="101.6"/>
-<instance part="R2" gate="G$1" x="129.54" y="96.52"/>
-<instance part="R3" gate="G$1" x="129.54" y="91.44"/>
-<instance part="+3V1" gate="G$1" x="154.94" y="101.6"/>
-<instance part="LED" gate="G$1" x="144.78" y="96.52" rot="R180"/>
-<instance part="+3V3" gate="G$1" x="81.28" y="124.46"/>
+<instance part="FRAME1" gate="G$1" x="0" y="0" smashed="yes"/>
+<instance part="FRAME1" gate="G$2" x="83.82" y="0" smashed="yes">
+<attribute name="LAST_DATE_TIME" x="96.52" y="1.27" size="2.54" layer="94"/>
+<attribute name="SHEET" x="170.18" y="1.27" size="2.54" layer="94"/>
+<attribute name="DRAWING_NAME" x="101.6" y="19.05" size="2.54" layer="94"/>
+</instance>
+<instance part="NODEMCU_L" gate="A" x="71.12" y="114.3" smashed="yes">
+<attribute name="NAME" x="64.77" y="135.255" size="1.778" layer="95"/>
+<attribute name="VALUE" x="64.77" y="91.44" size="1.778" layer="96"/>
+</instance>
+<instance part="NODEMCU_R" gate="A" x="86.36" y="114.3" smashed="yes" rot="R180">
+<attribute name="NAME" x="92.71" y="93.345" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="92.71" y="137.16" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="GND5" gate="1" x="60.96" y="93.98" smashed="yes">
+<attribute name="VALUE" x="58.42" y="91.44" size="1.778" layer="96"/>
+</instance>
+<instance part="I2C" gate="A" x="144.78" y="129.54" smashed="yes">
+<attribute name="NAME" x="138.43" y="137.795" size="1.778" layer="95"/>
+<attribute name="VALUE" x="138.43" y="121.92" size="1.778" layer="96"/>
+</instance>
+<instance part="+3V5" gate="G$1" x="134.62" y="137.16" smashed="yes">
+<attribute name="VALUE" x="132.08" y="132.08" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="GND6" gate="1" x="129.54" y="132.08" smashed="yes" rot="R270">
+<attribute name="VALUE" x="127" y="134.62" size="1.778" layer="96" rot="R270"/>
+</instance>
+<instance part="GND8" gate="1" x="96.52" y="93.98" smashed="yes">
+<attribute name="VALUE" x="93.98" y="91.44" size="1.778" layer="96"/>
+</instance>
+<instance part="GND10" gate="1" x="81.28" y="114.3" smashed="yes">
+<attribute name="VALUE" x="78.74" y="111.76" size="1.778" layer="96"/>
+</instance>
+<instance part="DOOR" gate="G$1" x="142.24" y="152.4" smashed="yes" rot="R180">
+<attribute name="VALUE" x="144.78" y="157.48" size="1.778" layer="96" rot="R180"/>
+<attribute name="NAME" x="144.78" y="146.558" size="1.778" layer="95" rot="R180"/>
+</instance>
+<instance part="GND12" gate="1" x="134.62" y="144.78" smashed="yes">
+<attribute name="VALUE" x="132.08" y="142.24" size="1.778" layer="96"/>
+</instance>
+<instance part="STANDBY" gate="1" x="142.24" y="114.3" smashed="yes" rot="R270">
+<attribute name="NAME" x="139.7" y="120.65" size="1.778" layer="95"/>
+<attribute name="VALUE" x="145.415" y="118.11" size="1.778" layer="96"/>
+</instance>
+<instance part="GND1" gate="1" x="147.32" y="109.22" smashed="yes">
+<attribute name="VALUE" x="144.78" y="106.68" size="1.778" layer="96"/>
+</instance>
+<instance part="R1" gate="G$1" x="129.54" y="101.6" smashed="yes">
+<attribute name="NAME" x="125.73" y="103.0986" size="1.778" layer="95"/>
+<attribute name="VALUE" x="125.73" y="98.298" size="1.778" layer="96"/>
+</instance>
+<instance part="R2" gate="G$1" x="129.54" y="96.52" smashed="yes">
+<attribute name="NAME" x="125.73" y="98.0186" size="1.778" layer="95"/>
+<attribute name="VALUE" x="125.73" y="93.218" size="1.778" layer="96"/>
+</instance>
+<instance part="R3" gate="G$1" x="129.54" y="91.44" smashed="yes">
+<attribute name="NAME" x="125.73" y="92.9386" size="1.778" layer="95"/>
+<attribute name="VALUE" x="125.73" y="88.138" size="1.778" layer="96"/>
+</instance>
+<instance part="+3V1" gate="G$1" x="154.94" y="101.6" smashed="yes">
+<attribute name="VALUE" x="152.4" y="96.52" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="LED" gate="G$1" x="144.78" y="96.52" smashed="yes" rot="R180">
+<attribute name="NAME" x="151.13" y="95.25" size="1.778" layer="95" rot="R270"/>
+</instance>
+<instance part="+3V3" gate="G$1" x="81.28" y="124.46" smashed="yes">
+<attribute name="VALUE" x="78.74" y="119.38" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="R4" gate="G$1" x="104.14" y="137.16" smashed="yes" rot="R90">
+<attribute name="NAME" x="102.6414" y="133.35" size="1.778" layer="95" rot="R90"/>
+<attribute name="VALUE" x="107.442" y="133.35" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="+3V2" gate="G$1" x="104.14" y="144.78" smashed="yes">
+<attribute name="VALUE" x="101.6" y="139.7" size="1.778" layer="96" rot="R90"/>
+</instance>
 </instances>
 <busses>
 </busses>
@@ -5099,6 +5157,10 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <wire x1="88.9" y1="119.38" x2="81.28" y2="119.38" width="0.1524" layer="91"/>
 <pinref part="+3V3" gate="G$1" pin="+3V3"/>
 <wire x1="81.28" y1="119.38" x2="81.28" y2="121.92" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="R4" gate="G$1" pin="2"/>
+<pinref part="+3V2" gate="G$1" pin="+3V3"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -5144,11 +5206,14 @@ Source: http://www.murata.com .. GRM43DR72E224KW01.pdf</description>
 <net name="D0" class="0">
 <segment>
 <pinref part="NODEMCU_R" gate="A" pin="15"/>
-<wire x1="88.9" y1="132.08" x2="121.92" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="88.9" y1="132.08" x2="104.14" y2="132.08" width="0.1524" layer="91"/>
 <label x="93.98" y="132.08" size="1.778" layer="95"/>
+<wire x1="104.14" y1="132.08" x2="121.92" y2="132.08" width="0.1524" layer="91"/>
 <wire x1="121.92" y1="132.08" x2="121.92" y2="152.4" width="0.1524" layer="91"/>
 <pinref part="DOOR" gate="G$1" pin="1"/>
 <wire x1="121.92" y1="152.4" x2="134.62" y2="152.4" width="0.1524" layer="91"/>
+<pinref part="R4" gate="G$1" pin="1"/>
+<junction x="104.14" y="132.08"/>
 </segment>
 </net>
 <net name="SCL" class="0">
