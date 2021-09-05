@@ -73,21 +73,19 @@ The PCB is indicated as optional, since the circuit is simple enough to hand sol
 
 The LED will be red at turn-on, and will change to green once it has connected to WiFi and synced with NIST time.  When the garage door is shut, the light will remain green.  If open, it will change to magenta for 15 minutes, and will then change to red after it has sent out its first email.  Pressing the tactile button will cause the light to blink blue, and the monitor will not send any emails for 2 hours, or whenever the button is pushed again, which ever comes first.  Any failure to connect to WiFi will cause the monitor to blink red until it is able to reconnect.
 
+The OLED will automatically turn off after five minutes of inactivity while the garage door is closed. This is to prevent OLED burn-in. This time can be extended by changing the OLED_TIMEOUT duration in the code. 
+
 If you ever wish to reset the SSID credentials, IFTTT key, or other settings, press the button for 5 seconds and power cycle.  Follow instructions 
 
 # Special Instructions for Compiling and Flashing Firmware Using Arduino IDE
 1. Configure Arduino IDE
-  1. Install Arduino IDE 1.8.7 (or later) from arduino.cc
+  1. Install Arduino IDE 1.8.15 (or later) from arduino.cc
   2. Open File>Preferences, and enter the following URL into "Additional Board Manager URLs": http://arduino.esp8266.com/stable/package_esp8266com_index.json
-  3. Open Tools>Board>Board Manager and install the esp8266 boards.  I am currently using v2.4.2, but later versions should also work.
+  3. Open Tools>Board>Board Manager and install the esp8266 boards.  I am currently using v3.0.2, but later versions should also work.
   4. In the Tools menu, configure Board: NodeMCU 1.0 (ESP-12E Module), CPU Frequency: 80 MHz, Upload Speed: 115200.
 2. (Optional) If logging is desired, uncomment #define ADAFRUIT_IO and 
-3. Install the following libraries.  I have indicated which versions I am currently using, though in most cases later versions should work: NTPClient (3.1.0), WiFi (1.2.7), WiFiManager (0.14.0), Time (1.5.0), Timezone (1.2.2), ArduinoJson (5.13.3, **Note:** as of 11/20/2018, later versions of ArduinoJson do not work with this code), Adafruit_MQTT (0.20.3), Adafruit_GFX (1.2.9), and Adafruit_SSD1306 (1.2.8).  All of these libraries are added through the Library Manager (Sketch > Include Library > Manage Libraries).
-4. If not using an OLED display, you can commant out the line #define OLED_DISPLAY in the sketch.  Otherwise, make sure the libraries Adafruit_GFX and Adafruit_SSD1306 are installed.   
+3. Install the following libraries.  I have indicated which versions I am currently using, though in most cases later versions should work: NTPClient (3.2.0), WiFi (1.2.7), WiFiManager (2.0.3-alpha), Time (1.6.1), Timezone (1.2.4), ArduinoJson (6.8.3), Adafruit_MQTT (2.4.2), Adafruit_GFX (1.10.10), and Adafruit_SSD1306 (2.4.6).  All of these libraries are added through the Library Manager (Sketch > Include Library > Manage Libraries).
+4. If not using an OLED display, you can comment out the line #define OLED_DISPLAY in the sketch.  Otherwise, make sure the libraries Adafruit_GFX and Adafruit_SSD1306 are installed.   
 5. Connect the NodeMCU board to your computer using a micro USB cable, and set Tools>Port to the new port that appears.  Your computer should automatically install the driver, but if it does not, you may need to manually download and install the CP2102 driver from http://www.silabs.com/products/mcu/pages/usbtouartbridgevcpdrivers.aspx.  
 6. Press the Upload button to compile the sketch and upload to the NodeMCU.  The most common reason for failing to compile are an selecting the wrong board or not installing all the required libraries.
-
-# Door Monitor Discussion
-This project was designed for the LM SSC Innovation Garage.  If you are in the process of building one and have some improvements/ideas to share, or a little troubleshooting help, please join the discussion at Gitter:
-[![Join the chat at https://gitter.im/GarageDoorMonitor/Lobby](https://badges.gitter.im/GarageDoorMonitor/Lobby.svg)](https://gitter.im/GarageDoorMonitor/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 

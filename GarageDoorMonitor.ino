@@ -1,6 +1,6 @@
 /*    
  *    GarageDoorMonitor
- *	  Copyright (C) 2018  Larry McGovern
+ *	  Copyright (C) 2021  Larry McGovern
  *	
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -100,7 +100,7 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.nist.gov", 0, 7200000); // Update time every two hours
 
 int wifiStatus, doorStatus, doorStatusPrev = CLOSED, openMessage = false;
-unsigned long int changeTime, changeTimer, lastCheckTime, standbyModeTime, resetTimer;
+unsigned long int changeTime, changeTimer, lastCheckTime, standbyModeTime, resetTimer, oledTimer;
 char changeTimeStr[50], closeTimeStr[20];
 int dailyMessageSent;
 int prevSecond;
@@ -118,6 +118,7 @@ bool redState, greenState, blueState, blinkState, standbyMode = 0;
 #define DOOR_CHECK_PERIOD 100   // Check door status every 100 msec
 #define STANDBY_TIMEOUT 7200000  // Automatically go out of standby mode after 2 hours
 #define WIFI_RESET_TIMEOUT 1800000 // Reboot if wifi drops out for more than 30 minutes
+#define OLED_TIMEOUT 300000 // Turn OLED off wheen door closed and after 5 minutes of inactivity 
 
 #ifdef OLED_DISPLAY
   #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -166,6 +167,7 @@ void setup() {
   // Setup WiFiManager
 
   WiFiManager MyWifiManager;
+
   MyWifiManager.setAPCallback(configModeCallback);
   
   WiFiManagerParameter custom_api_text("<br/><br/><br/>IFTTT API Key:<br/>");
@@ -315,6 +317,7 @@ void setup() {
   changeTimer = changeTime;
   lastCheckTime = millis() - DOOR_CHECK_PERIOD;
   standbyModeTime = millis();
+  oledTimer = millis();
   updateTime(1);
   dailyMessageSent = day();
   
@@ -358,12 +361,15 @@ void loop()
 
     changeTime = millis();
     changeTimer = changeTime;
+    oledTimer = changeTime;
     updateTime(1);
     Serial.println(String(door_open_closed[(int)(doorStatus==OPEN)]) + " at " + changeTimeStr);
     sendAdaIO();
     doorStatusPrev = doorStatus;   
   }
 
+  if ((doorStatus == OPEN) || standbyMode) oledTimer = millis(); // OLED timer runs only wheen door is closed and not in standby mode
+  
   if (standbyMode) {
     if (millis() - standbyModeTime > STANDBY_TIMEOUT) {
       standbyMode = 0;  // Automatically go out of standby mode after timeout period
@@ -423,15 +429,18 @@ void updateTime(int updateChangeTime) {  // If updateChangeTime == 1, the global
 #ifdef OLED_DISPLAY
   sprintf(date_str, "%s, %s %d", day_names[weekday() - 1], month_names[month() - 1], day());
   display.clearDisplay();
-  display.setCursor(0,8);
-  display.setFont(&FreeMonoBold12pt7b);
-  display.println(tod_hms);
-  display.setCursor(0,23);
-  display.setFont(); 
-  display.println(date_str);
-  display.println("");
-  display.println("Door last closed at:"); 
-  display.println(closeTimeStr);
+
+  if ((millis() - oledTimer) < OLED_TIMEOUT) {
+    display.setCursor(0,8);
+    display.setFont(&FreeMonoBold12pt7b);
+    display.println(tod_hms);
+    display.setCursor(0,23);
+    display.setFont(); 
+    display.println(date_str);
+    display.println("");
+    display.println("Door last closed at:"); 
+    display.println(closeTimeStr);
+  }
 
   if (!wifiStatus) {
     display.println("Error: No Internet");
@@ -509,13 +518,12 @@ int sendIFTTT(String url)
   }
   wifiStatus = 1;
 
-  StaticJsonBuffer<200> jsonBuffer;
+  StaticJsonDocument<200> jsonDoc;
 
-  JsonObject& root = jsonBuffer.createObject();
-  root["value1"] = changeTimeStr;
-  root["value2"] = (millis() - changeTime) / 60000;
-
-  root.printTo(buffer, sizeof(buffer));
+  jsonDoc["value1"] = changeTimeStr;
+  jsonDoc["value2"] = (millis() - changeTime) / 60000;
+  
+  serializeJson(jsonDoc, buffer, sizeof(buffer));
   Serial.println("JSON Data:");
   Serial.println(buffer);
 
@@ -527,7 +535,7 @@ int sendIFTTT(String url)
                "Host: " + host + "\r\n" +
 			         "Connection: close\r\n" +
                "Content-Type: application/json\r\n" +
-               "Content-Length: " + root.measureLength() + "\r\n\r\n" +
+               "Content-Length: " + measureJson(jsonDoc) + "\r\n\r\n" +
                buffer + "\r\n");
  
   while (client.connected() || client.available()) {
@@ -619,9 +627,11 @@ void readStandbyButton() {
 
   if (((millis() - lastDebounceTime) > 5000) && (buttonReading == LOW)) {  // Button has been depressed for 5 seconds
      WiFiManager MyWifiManager;
+
      MyWifiManager.resetSettings();  // Reset WIFI
-     delay(1000);
+     delay(3000);
      ESP.restart();
+     delay(5000);
   }
   lastButtonState = buttonReading;
 }
